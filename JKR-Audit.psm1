@@ -644,3 +644,321 @@ function Get-AuditEventData {
     } #END
 
 } #FUNCTION
+
+
+function Invoke-JKRLocalAuditReport {
+    <#
+        .SYNOPSIS
+            Creates a Local Audit Report
+        .DESCRIPTION
+            Creates a Local Audit Report at the location specified, and also hashes any Files passed to the Function as part of the report
+        .PARAMETER ReportPath
+            Path to save the report to excluding Filename as it will be automatically named
+        .PARAMETER FilestoHash
+            Comma Separated list of files to Hash during report generation
+        .EXAMPLE
+            Invoke-JKRLocalAuditReport -ReportPath 'C:\AuditReports\' -FilestoHash "FILE1", "FILE2"
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]$ReportPath,    
+        [Parameter(Mandatory = $true)]$FilestoHash
+
+    ) 
+    BEGIN { 
+        $Date = get-date -Format MM-dd-yyyy
+
+        $ReportPath = $ReportPath.Trimend('\')
+        $ReportPath = $ReportPath + '\'
+        $ReportPath = $ReportPath + 'AuditReport' + $Date + '.html'
+
+        # HTML Formatting - Will use JKR-MISC in the future with New-HTMLHead
+        $HtmlHead = '<style>
+    body {
+        background-color: white;
+        font-family:      "Calibri";
+    }
+
+    table {
+        border-width:     1px;
+        border-style:     solid;
+        border-color:     black;
+        border-collapse:  collapse;
+        width:            100%;
+    }
+
+    th {
+        border-width:     1px;
+        padding:          5px;
+        border-style:     solid;
+        border-color:     black;
+        background-color: #98C6F3;
+    }
+
+    td {
+        border-width:     1px;
+        padding:          5px;
+        border-style:     solid;
+        border-color:     black;
+        background-color: White;
+    }
+
+    tr {
+        text-align:       left;
+    }
+</style>'
+
+
+    } #BEGIN
+
+    PROCESS {
+        $UserList = Get-Localuser | Select-Object Name, Description, LastLogon, Enabled, PasswordExpires | ConvertTo-Html
+        $GroupList = Get-LocalGroup | Select-Object Name, Description | ConvertTo-Html
+
+        # 4624 - An account was successfully logged on - (TimeCreated - Username)
+        $Event4624 = Get-AuditEventData -EventLog Security -EventID 4624 | Where-Object -FilterScript { ($_.User -ne 'SYSTEM') -and ($_.User -ne 'LOCAL SERVICE') -and ($_.User -ne 'NETWORK SERVICE') }
+        If ($Event4624 -like '*No Events Located*') { $Event4624 = $Event4624 } Else { $Event4624 = $Event4624 | ConvertTo-Html }
+
+        # 4720 - A user account was created
+        $Event4720 = Get-AuditEventData -EventLog Security -EventID 4720
+        If ($Event4720 -like '*No Events Located*') { $Event4720 = $Event4720 } Else { $Event4720 = $Event4720 | ConvertTo-Html }
+
+        # 4722 - A user account was enabled
+        $Event4722 = Get-AuditEventData -EventLog Security -EventID 4722
+        If ($Event4722 -like '*No Events Located*') { $Event4722 = $Event4722 } Else { $Event4722 = $Event4722 | ConvertTo-Html }
+
+        # 4725 - A user account was disabled
+        $Event4725 = Get-AuditEventData -EventLog Security -EventID 4725
+        If ($Event4725 -like '*No Events Located*') { $Event4725 = $Event4725 } Else { $Event4725 = $Event4725 | ConvertTo-Html }
+
+        # 4726 - A user account was deleted
+        $Event4726 = Get-AuditEventData -EventLog Security -EventID 4726
+        If ($Event4726 -like '*No Events Located*') { $Event4726 = $Event4726 } Else { $Event4726 = $Event4726 | ConvertTo-Html }
+
+        # 4738 - A user account was changed 
+        $Event4738 = Get-AuditEventData -EventLog Security -EventID 4738
+        If ($Event4738 -like '*No Events Located*') { $Event4738 = $Event4738 } Else { $Event4738 = $Event4738 | ConvertTo-Html }
+
+        # 4740 - A user account was locked out
+        $Event4740 = Get-AuditEventData -EventLog Security -EventID 4740
+        If ($Event4740 -like '*No Events Located*') { $Event4740 = $Event4740 } Else { $Event4740 = $Event4740 | ConvertTo-Html }
+
+        # 4767 - A user account was unlocked
+        $Event4767 = Get-AuditEventData -EventLog Security -EventID 4767
+        If ($Event4767 -like '*No Events Located*') { $Event4767 = $Event4767 } Else { $Event4767 = $Event4767 | ConvertTo-Html }
+
+        # 4731 - A security-enabled local group was created
+        $Event4731 = Get-AuditEventData -EventLog Security -EventID 4731
+        If ($Event4731 -like '*No Events Located*') { $Event4731 = $Event4731 } Else { $Event4731 = $Event4731 | ConvertTo-Html }
+
+        # 4732 - A member was added to a security-enabled local group
+        $Event4732 = Get-AuditEventData -EventLog Security -EventID 4732
+        If ($Event4732 -like '*No Events Located*') { $Event4732 = $Event4732 } Else { $Event4732 = $Event4732 | ConvertTo-Html }
+
+        # 4733 - A member was removed from a security-enabled local group
+        $Event4733 = Get-AuditEventData -EventLog Security -EventID 4733
+        If ($Event4733 -like '*No Events Located*') { $Event4733 = $Event4733 } Else { $Event4733 = $Event4733 | ConvertTo-Html }
+
+        # 4734 - A security-enabled local group was deleted
+        $Event4734 = Get-AuditEventData -EventLog Security -EventID 4734
+        If ($Event4734 -like '*No Events Located*') { $Event4734 = $Event4734 } Else { $Event4734 = $Event4734 | ConvertTo-Html }
+
+        # 4735 - A security-enabled local group was changed
+        $Event4735 = Get-AuditEventData -EventLog Security -EventID 4735
+        If ($Event4735 -like '*No Events Located*') { $Event4735 = $Event4735 } Else { $Event4735 = $Event4735 | ConvertTo-Html }
+
+        # 4608 - Windows is starting up
+        $Event4608 = Get-AuditEventData -EventLog Security -EventID 4608
+        If ($Event4608 -like '*No Events Located*') { $Event4608 = $Event4608 } Else { $Event4608 = $Event4608 | ConvertTo-Html }
+
+        # 4616 - The system time was changed
+        $Event4616 = Get-AuditEventData -EventLog Security -EventID 4616
+        If ($Event4616 -like '*No Events Located*') { $Event4616 = $Event4616 } Else { $Event4616 = $Event4616 | ConvertTo-Html }
+
+        # 4697 - A service was installed in the system
+        $Event4697 = Get-AuditEventData -EventLog Security -EventID 4697 | Where-Object -FilterScript { ($_.'Servide Path' -notlike '*C:\Windows\system32\svchost.exe*') }
+        If ($Event4697 -like '*No Events Located*') { $Event4697 = $Event4697 } Else { $Event4697 = $Event4697 | ConvertTo-Html }
+
+        # 6416 - A new external device was recognized by the system
+        $Event6416 = Get-AuditEventData -EventLog Security -EventID 6416 | Where-Object -FilterScript { ($_.'Class Name' -ne 'PrintQueue') -and ($_.'Class Name' -ne 'Keyboard') -and ($_.'Class Name' -ne 'Mouse') -and ($_.'Class Name' -ne 'HIDClass') }
+        If ($Event6416 -like '*No Events Located*') { $Event6416 = $Event6416 } Else { $Event6416 = $Event6416 | ConvertTo-Html }
+
+        # 6419 - A request was made to disable a device
+        $Event6419 = Get-AuditEventData -EventLog Security -EventID 6419
+        If ($Event6419 -like '*No Events Located*') { $Event6419 = $Event6419 } Else { $Event6419 = $Event6419 | ConvertTo-Html }
+
+        # 6420 - A device was disabled
+        $Event6420 = Get-AuditEventData -EventLog Security -EventID 6420
+        If ($Event6420 -like '*No Events Located*') { $Event6420 = $Event6420 } Else { $Event6420 = $Event6420 | ConvertTo-Html }
+
+        # 6421 - A request was made to enable a device
+        $Event6421 = Get-AuditEventData -EventLog Security -EventID 6421
+        If ($Event6421 -like '*No Events Located*') { $Event6421 = $Event6421 } Else { $Event6421 = $Event6421 | ConvertTo-Html }
+
+        # 6422 - A device was enabled
+        $Event6422 = Get-AuditEventData -EventLog Security -EventID 6422
+        If ($Event6422 -like '*No Events Located*') { $Event6422 = $Event6422 } Else { $Event6422 = $Event6422 | ConvertTo-Html }
+
+        # 4705 - A user right was removed
+        $Event4705 = Get-AuditEventData -EventLog Security -EventID 4705
+        If ($Event4705 -like '*No Events Located*') { $Event4705 = $Event4705 } Else { $Event4705 = $Event4705 | ConvertTo-Html }
+
+        # 4719 - System audit policy was changed
+        $Event4719 = Get-AuditEventData -EventLog Security -EventID 4719
+        If ($Event4719 -like '*No Events Located*') { $Event4719 = $Event4719 } Else { $Event4719 = $Event4719 | ConvertTo-Html }
+
+        # 4907 - Auditing settings on object were changed
+        $Event4907 = Get-AuditEventData -EventLog Security -EventID 4907
+        If ($Event4907 -like '*No Events Located*') { $Event4907 = $Event4907 } Else { $Event4907 = $Event4907 | ConvertTo-Html }
+
+        # 4625 - An account failed to log on
+        $Event4625 = Get-AuditEventData -EventLog Security -EventID 4625
+        If ($Event4625 -like '*No Events Located*') { $Event4625 = $Event4625 } Else { $Event4625 = $Event4625 | ConvertTo-Html }
+
+        # 4647 - User initiated logoff
+        $Event4647 = Get-AuditEventData -EventLog Security -EventID 4647
+        If ($Event4647 -like '*No Events Located*') { $Event4647 = $Event4647 } Else { $Event4647 = $Event4647 | ConvertTo-Html }
+
+        # 4672 - Special privileges assigned to new logon
+        $Event4672 = Get-AuditEventData -EventLog Security -EventID 4672 | Where-Object -FilterScript { ($_.'User Name' -ne 'SYSTEM') }
+        If ($Event4672 -like '*No Events Located*') { $Event4672 = $Event4672 } Else { $Event4672 = $Event4672 | ConvertTo-Html }
+
+        # 1102 - The audit log was cleared
+        $Event1102 = Get-AuditEventData -EventLog Security -EventID 1102
+        If ($Event1102 -like '*No Events Located*') { $Event1102 = $Event1102 } Else { $Event1102 = $Event1102 | ConvertTo-Html }
+
+        # 4609 - Windows is shutting down
+        $Event4609 = Get-AuditEventData -EventLog Security -EventID 4609
+        If ($Event4609 -like '*No Events Located*') { $Event4609 = $Event4609 } Else { $Event4609 = $Event4609 | ConvertTo-Html }
+
+        # 4715 - The audit policy (SACL) on an object was changed
+        $Event4715 = Get-AuditEventData -EventLog Security -EventID 4715
+        If ($Event4715 -like '*No Events Located*') { $Event4715 = $Event4715 } Else { $Event4715 = $Event4715 | ConvertTo-Html }
+
+
+        # Combine Report
+        $Head = $HtmlHead # New-HTMLHead
+        $DateGenerated = '<h1>' + 'Generated at ' + (Get-Date) + '<h1>'
+        $UserHeading = '<h2>Local User List</h2>'
+        $GroupHeading = '<h2>Local Group List</h2>'
+        $HashHeading = '<h2>File Hashes</h2>'
+        $4624Heading = '<h2>4624 - An account was successfully logged on</h2>'
+        $4720Heading = '<h2>4720 - A user account was created</h2>'
+        $4722Heading = '<h2>4722 - A user account was enabled</h2>'
+        $4725Heading = '<h2>4725 - A user account was disabled</h2>'
+        $4726Heading = '<h2>4726 - A user account was deleted</h2>'
+        $4738Heading = '<h2>4738 - A user account was changed</h2>'
+        $4740Heading = '<h2>4740 - A user account was locked out</h2>'
+        $4767Heading = '<h2>4767 - A user account was unlocked</h2>'
+        $4731Heading = '<h2>4731 - A security-enabled local group was created</h2>'
+        $4732Heading = '<h2>4732 - A member was added to a security-enabled local group</h2>'
+        $4733Heading = '<h2>4733 - A member was removed from a security-enabled local group</h2>'
+        $4734Heading = '<h2>4734 - A security-enabled local group was deleted</h2>'
+        $4735Heading = '<h2>4735 - A security-enabled local group was changed</h2>'
+        $4608Heading = '<h2>4608 - Windows is starting up</h2>'
+        $4616Heading = '<h2>4616 - The system time was changed</h2>'
+        $4697Heading = '<h2>4697 - A service was installed in the system</h2>'
+        $6416Heading = '<h2>6416 - A new external device was recognized by the system</h2>'
+        $6419Heading = '<h2>6419 - A request was made to disable a device</h2>'
+        $6420Heading = '<h2>6420 - A device was disabled</h2>'
+        $6421Heading = '<h2>6421 - A request was made to enable a device</h2>'
+        $6422Heading = '<h2>6422 - A device was enabled</h2>'
+        $4705Heading = '<h2>4705 - A user right was removed</h2>'
+        $4719Heading = '<h2>4719 - System audit policy was changed</h2>'
+        $4907Heading = '<h2>4907 - Auditing settings on object were changed</h2>'
+        $4625Heading = '<h2>4625 - An account failed to log on</h2>'
+        $4647Heading = '<h2>4647 - User initiated logoff</h2>'
+        $4672Heading = '<h2>4672 - Special privileges assigned to new logon</h2>'
+        $1102Heading = '<h2>1102 - The audit log was cleared</h2>'
+        $4609Heading = '<h2>4609 - Windows is shutting down</h2>'
+        $4715Heading = '<h2>4715 - The audit policy (SACL) on an object was changed</h2>'
+
+
+        $FileHashes = @()
+
+        foreach ($File in $FilestoHash) {
+            $Hash = Get-FileHash -Path $File -Algorithm SHA256
+            $Row = New-Object PSObject
+            $Row | Add-Member -MemberType noteproperty -Name "Path" -Value $Hash.Path
+            $Row | Add-Member -MemberType noteproperty -Name "Hash" -Value $Hash.Hash
+            $Row | Add-Member -MemberType noteproperty -Name "Algorithm" -Value $Hash.Algorithm
+            $FileHashes += $Row
+            $Hash = $Null
+        }
+        $FileHashes = $FileHashes | ConvertTo-Html
+
+    } #PROCESS
+
+    END { 
+        ($Head + `
+                $DateGenerated `
+                + $HashHeading `
+                + $FileHashes `
+                + $UserHeading `
+                + $UserList `
+                + $GroupHeading `
+                + $GroupList `
+                + $1102Heading `
+                + $Event1102 `
+                + $4624Heading `
+                + $Event4624 `
+                + $4625Heading `
+                + $Event4625 `
+                + $4720Heading `
+                + $Event4720 `
+                + $4722Heading `
+                + $Event4722 `
+                + $4725Heading `
+                + $Event4725 `
+                + $4726Heading `
+                + $Event4726 `
+                + $4738Heading `
+                + $Event4738 `
+                + $4740Heading `
+                + $Event4740 `
+                + $4767Heading `
+                + $Event4767 `
+                + $4731Heading `
+                + $Event4731 `
+                + $4732Heading `
+                + $Event4732 `
+                + $4733Heading `
+                + $Event4733 `
+                + $4734Heading `
+                + $Event4734 `
+                + $4735Heading `
+                + $Event4735 `
+                + $4608Heading `
+                + $Event4608 `
+                + $4616Heading `
+                + $Event4616 `
+                + $4697Heading `
+                + $Event4697 `
+                + $6416Heading `
+                + $Event6416 `
+                + $6419Heading `
+                + $Event6419 `
+                + $6420Heading `
+                + $Event6420 `
+                + $6421Heading `
+                + $Event6421 `
+                + $6422Heading `
+                + $Event6422 `
+                + $4705Heading `
+                + $Event4705 `
+                + $4719Heading `
+                + $Event4719 `
+                + $4907Heading `
+                + $Event4907 `
+                + $4647Heading `
+                + $Event4647 `
+                + $4672Heading `
+                + $Event4672 `
+                + $4609Heading `
+                + $Event4609 `
+                + $4715Heading `
+                + $Event4715 `
+        ) > $ReportPath
+    } #END
+
+} #FUNCTION
