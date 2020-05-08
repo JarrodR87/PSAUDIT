@@ -720,6 +720,7 @@ function Invoke-JKRLocalAuditReport {
     }
 </style>'
 
+$ErrorActionPreference= 'silentlycontinue'
 
     } #BEGIN
 
@@ -746,6 +747,8 @@ function Invoke-JKRLocalAuditReport {
             $Row | Add-Member -MemberType noteproperty -Name "ProfilePath" -Value $ProfilePath
     
             $LocalUserInfo += $Row
+
+            $ProfilePath = $NULL
         }
 
         $LocalUserInfo = $LocalUserInfo | Sort-Object -Property LastLogon -Descending | ConvertTo-Html
