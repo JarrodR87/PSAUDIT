@@ -218,7 +218,7 @@ function Get-ComputerSWInfo {
 
     PROCESS {
         foreach ($Computer in $ComputerName) {
-            $ComputerSWInfo = Get-CimInstance -Class Win32_Product -ComputerName $Computer | Select-Object Name, Vendor, Version
+            $ComputerSWInfo = Get-CimInstance -Class Win32Reg_AddRemovePrograms -ComputerName $Computer
             
             $Row = New-Object PSObject
             $Row | Add-Member -MemberType noteproperty -Name "ComputerName" -Value $Computer
@@ -812,6 +812,9 @@ $ErrorActionPreference= 'silentlycontinue'
         $OfficeScanDATs = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Trend Micro\OfficeScan Client" | Where-Object -FilterScript { $_.Name -Like '*icrc$oth*' } | Select-Object Name, LastWriteTime | ConvertTo-Html
 
 
+        # Software
+        $SoftwareInfo = (Get-ComputerSWInfo).ComputerSWInfo | Select-Object DisplayName, InstallDate, Publisher, Version | Sort-Object -Property InstallDate -Descending
+        $SoftwareInfo = $SoftwareInfo | ConvertTo-Html
 
         # 4624 - An account was successfully logged on - (TimeCreated - Username)
         $Event4624 = Get-AuditEventData -EventLog Security -EventID 4624 -Days $Days | Where-Object -FilterScript { ($_.User -ne 'SYSTEM') -and ($_.User -ne 'LOCAL SERVICE') -and ($_.User -ne 'NETWORK SERVICE') }
@@ -973,6 +976,7 @@ $ErrorActionPreference= 'silentlycontinue'
         $LocalVolumeHeading = '<h2>Local Volume List</h2>'
         $LocalDiskHeading = '<h2>Local Disk List</h2>'
         $OfficeScanHeading = '<h2>OfficeScan DATs</h2>'
+        $SoftwareHeading = '<h2>Installed Software</h2>'
 
 
         $FileHashes = @()
@@ -1005,6 +1009,8 @@ $ErrorActionPreference= 'silentlycontinue'
                 + $LocalVolumeInfo `
                 + $OfficeScanHeading `
                 + $OfficeScanDATs `
+                + $SoftwareHeading `
+                + $SoftwareInfo `
                 + $1102Heading `
                 + $Event1102 `
                 + $4624Heading `
