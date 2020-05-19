@@ -634,6 +634,23 @@ function Get-AuditEventData {
                 Elseif ($EventID -eq '4715' -and $Null -ne $Events) { 
                     #Need Event Data
                 }
+                # Windows 4724 - A password was reset by another account
+                Elseif ($EventID -eq '4724' -and $Null -ne $Events) { 
+                   $Row = New-Object PSObject
+                   $Row | Add-Member -MemberType noteproperty -Name "User Reset" -Value $Event.Properties.Value[0]
+                   $Row | Add-Member -MemberType noteproperty -Name "Reset By" -Value $Event.Properties.Value[4]
+                   $Row | Add-Member -MemberType noteproperty -Name "Timecreated" -Value $Event.TimeCreated
+
+                   $AuditEventData += $Row
+                }
+                # Windows 4634 - Successful logout
+                Elseif ($EventID -eq '4634' -and $Null -ne $Events) { 
+                   $Row = New-Object PSObject
+                   $Row | Add-Member -MemberType noteproperty -Name "User Name" -Value $Event.Properties.Value[1]
+                   $Row | Add-Member -MemberType noteproperty -Name "Timecreated" -Value $Event.TimeCreated
+
+                   $AuditEventData += $Row
+                }
             }
                
         }
@@ -936,6 +953,18 @@ $ErrorActionPreference= 'silentlycontinue'
         $Event4715 = Get-AuditEventData -EventLog Security -EventID 4715 -Days $Days 
         If ($Event4715 -like '*No Events Located*') { $Event4715 = $Event4715 } Else { $Event4715 = $Event4715 | ConvertTo-Html }
 
+        # 4724 - A password was reset by another account
+        $Event4724 = Get-AuditEventData -EventLog Security -EventID 4724 -Days $Days 
+        If ($Event4724 -like '*No Events Located*') { $Event4724 = $Event4724 } Else { $Event4724 = $Event4724 | ConvertTo-Html }
+
+        # 4634 - Successful logout
+        $Event4634 = Get-AuditEventData -EventLog Security -EventID 4634 -Days $Days 
+        If ($Event4634 -like '*No Events Located*') { $Event4634 = $Event4634 } Else { $Event4634 = $Event4634 | ConvertTo-Html }
+
+        # File Ownership Changes
+        $FileOwnershipChanges = Get-WinEvent -FilterHashtable @{LogName = "Security"; ID = 4674 } | Where-Object -FilterScript { $_.Message -like "*.evtx*" -and $_.Message -like "*WRITE_OWNER*" } | ConvertTo-Html
+
+
 
         # Combine Report
         $Head = $HtmlHead # New-HTMLHead
@@ -973,10 +1002,13 @@ $ErrorActionPreference= 'silentlycontinue'
         $1102Heading = '<h2>1102 - The audit log was cleared</h2>'
         $4609Heading = '<h2>4609 - Windows is shutting down</h2>'
         $4715Heading = '<h2>4715 - The audit policy (SACL) on an object was changed</h2>'
+        $4724Heading = '<h2>4724 - A password was reset by another account</h2>'
+        $4634Heading = '<h2>4634 - Successful logout</h2>'
         $LocalVolumeHeading = '<h2>Local Volume List</h2>'
         $LocalDiskHeading = '<h2>Local Disk List</h2>'
         $OfficeScanHeading = '<h2>OfficeScan DATs</h2>'
         $SoftwareHeading = '<h2>Installed Software</h2>'
+        $FileOwnershipChangesHeading = '<h2>Ownership Changed on Files</h2>'
 
 
         $FileHashes = @()
@@ -1071,6 +1103,12 @@ $ErrorActionPreference= 'silentlycontinue'
                 + $Event4609 `
                 + $4715Heading `
                 + $Event4715 `
+                + $4724Heading `
+                + $Event4724 `
+                + $4634Heading `
+                + $Event4634 `
+                + $FileOwnershipChangesHeading `
+                + $FileOwnershipChanges `
         ) > $ReportPath
     } #END
 
