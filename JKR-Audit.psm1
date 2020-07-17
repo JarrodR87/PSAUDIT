@@ -294,14 +294,19 @@ function Get-AuditEventData {
             Event Log to lookup specified ID in
         .PARAMETER Days
             Number of Days in the past ot look at Events. Will default to 14 if no input is provided
+        .PARAMETER FilePath
+            Needed if EventLog is set to 'File'. It specifies the Path for the File
         .EXAMPLE
             Get-AuditEventData -EventLog Security -EventID 4624
+        .EXAMPLE
+            Get-AuditEventData -EventLog File -EventID 4624 -FilePath C:\Temp\Security.evtx
     #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)][string]$EventID,
         [Parameter(Mandatory = $true)][string]$EventLog,
-        [Parameter()]$Days
+        [Parameter()]$Days,
+        [Parameter()]$FilePath
     ) 
     BEGIN { 
         if ($NULL -eq $Days) {
@@ -311,7 +316,14 @@ function Get-AuditEventData {
             $Days = $Days
         }
 
-        $Events = Get-WinEvent -FilterHashtable @{Logname = $EventLog; ID = $EventID ; StartTime = (Get-Date).AddDays(-$Days) } -ErrorAction SilentlyContinue
+        if ($EventLog -eq 'File') {
+            $Events = Get-WinEvent -FilterHashtable @{PATH = $FilePath; ID = $EventID ; StartTime = (Get-Date).AddDays(-$Days) } -ErrorAction SilentlyContinue
+        }
+        else {
+            $Events = Get-WinEvent -FilterHashtable @{Logname = $EventLog; ID = $EventID ; StartTime = (Get-Date).AddDays(-$Days) } -ErrorAction SilentlyContinue
+        }
+
+
         $AuditEventData = @()
 
     } #BEGIN
@@ -636,20 +648,20 @@ function Get-AuditEventData {
                 }
                 # Windows 4724 - A password was reset by another account
                 Elseif ($EventID -eq '4724' -and $Null -ne $Events) { 
-                   $Row = New-Object PSObject
-                   $Row | Add-Member -MemberType noteproperty -Name "User Reset" -Value $Event.Properties.Value[0]
-                   $Row | Add-Member -MemberType noteproperty -Name "Reset By" -Value $Event.Properties.Value[4]
-                   $Row | Add-Member -MemberType noteproperty -Name "Timecreated" -Value $Event.TimeCreated
+                    $Row = New-Object PSObject
+                    $Row | Add-Member -MemberType noteproperty -Name "User Reset" -Value $Event.Properties.Value[0]
+                    $Row | Add-Member -MemberType noteproperty -Name "Reset By" -Value $Event.Properties.Value[4]
+                    $Row | Add-Member -MemberType noteproperty -Name "Timecreated" -Value $Event.TimeCreated
 
-                   $AuditEventData += $Row
+                    $AuditEventData += $Row
                 }
                 # Windows 4634 - Successful logout
                 Elseif ($EventID -eq '4634' -and $Null -ne $Events) { 
-                   $Row = New-Object PSObject
-                   $Row | Add-Member -MemberType noteproperty -Name "User Name" -Value $Event.Properties.Value[1]
-                   $Row | Add-Member -MemberType noteproperty -Name "Timecreated" -Value $Event.TimeCreated
+                    $Row = New-Object PSObject
+                    $Row | Add-Member -MemberType noteproperty -Name "User Name" -Value $Event.Properties.Value[1]
+                    $Row | Add-Member -MemberType noteproperty -Name "Timecreated" -Value $Event.TimeCreated
 
-                   $AuditEventData += $Row
+                    $AuditEventData += $Row
                 }
             }
                
