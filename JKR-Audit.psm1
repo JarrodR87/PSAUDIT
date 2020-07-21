@@ -296,6 +296,8 @@ function Get-AuditEventData {
             Number of Days in the past ot look at Events. Will default to 14 if no input is provided
         .PARAMETER FilePath
             Needed if EventLog is set to 'File'. It specifies the Path for the File
+        .PARAMETER EndDate
+            Needed if specifying a custom date Range
         .EXAMPLE
             Get-AuditEventData -EventLog Security -EventID 4624
         .EXAMPLE
@@ -306,7 +308,9 @@ function Get-AuditEventData {
         [Parameter(Mandatory = $true)][string]$EventID,
         [Parameter(Mandatory = $true)][string]$EventLog,
         [Parameter()]$Days,
-        [Parameter()]$FilePath
+        [Parameter()]$FilePath,
+        [Parameter()]$StartDate,
+        [Parameter()]$EndDate
     ) 
     BEGIN { 
         if ($NULL -eq $Days) {
@@ -316,11 +320,25 @@ function Get-AuditEventData {
             $Days = $Days
         }
 
-        if ($EventLog -eq 'File') {
-            $Events = Get-WinEvent -FilterHashtable @{PATH = $FilePath; ID = $EventID ; StartTime = (Get-Date).AddDays(-$Days) } -ErrorAction SilentlyContinue
+        if ($NULL -eq $StartDate) {
+            $StartDate = (Get-Date).AddDays(-$Days)
         }
         else {
-            $Events = Get-WinEvent -FilterHashtable @{Logname = $EventLog; ID = $EventID ; StartTime = (Get-Date).AddDays(-$Days) } -ErrorAction SilentlyContinue
+            $StartDate = $StartDate
+        }
+
+        if ($NULL -eq $EndDate) {
+            $EndDate = (Get-Date).AddDays(1)
+        }
+        else {
+            $EndDate = $EndDate
+        }
+
+        if ($EventLog -eq 'File') {
+            $Events = Get-WinEvent -FilterHashtable @{PATH = $FilePath ; ID = $EventID ; StartTime = $StartDate ; EndTIme = $EndDate } -ErrorAction SilentlyContinue
+        }
+        else {
+            $Events = Get-WinEvent -FilterHashtable @{Logname = $EventLog; ID = $EventID ; StartTime = $StartDate ; EndTIme = $EndDate } -ErrorAction SilentlyContinue
         }
 
 
