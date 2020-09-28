@@ -297,7 +297,7 @@ function Invoke-JKRLocalAuditReport {
         If ($Event4634 -like '*No Events Located*') { $Event4634 = $Event4634 } Else { $Event4634 = $Event4634 | ConvertTo-Html -Fragment }
 
         # File Ownership Changes
-        $FileOwnershipChanges = Get-WinEvent -FilterHashtable @{LogName = "Security"; ID = 4674 ; StartTime = ((Get-Date).AddDays(-$Days)) ; EndTIme = ((Get-Date).AddDays(1)) } | Where-Object -FilterScript { $_.Message -like "*.evtx*" -and $_.Message -like "*WRITE_OWNER*" } | ConvertTo-Html -Fragment
+        # $FileOwnershipChanges = Get-WinEvent -FilterHashtable @{LogName = "Security"; ID = 4674 ; StartTime = ((Get-Date).AddDays(-$Days)) ; EndTIme = ((Get-Date).AddDays(1)) } | Where-Object -FilterScript { $_.Message -like "*.evtx*" -and $_.Message -like "*WRITE_OWNER*" } | ConvertTo-Html -Fragment
 
         # Combine Report
         $Head = $HtmlHead # New-HTMLHead
