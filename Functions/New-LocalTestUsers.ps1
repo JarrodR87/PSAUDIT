@@ -1,36 +1,51 @@
 function New-LocalTestUsers {
     <#
         .SYNOPSIS
-            Creates specified number of Test Users as Local Accounts 
+            Creates a specified number of local test user accounts.
+
         .DESCRIPTION
-            Creates TEST01 - 0X where X is the number specified
+            Creates test users named TEST01, TEST02, ..., up to the specified count.
+            Optionally adds them to the local Administrators group.
+
         .PARAMETER TestAccounts
-            Number of Test Accounts to create Defaults to 1 if none entered
+            Number of test accounts to create. Defaults to 1.
+
+        .PARAMETER AsAdmin
+            If provided, adds each test user to the local Administrators group.
+
         .EXAMPLE
-            New-LocalTestUsers -TestAccounts 12
+            New-LocalTestUsers -TestAccounts 5
+
+        .EXAMPLE
+            New-LocalTestUsers -TestAccounts 3 -AsAdmin
     #>
     [CmdletBinding()]
-    Param(
-        [Parameter()]$TestAccounts
-    ) 
-    BEGIN { 
-        $Password = "TEST"
-        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
+    param(
+        [int]$TestAccounts = 1,
+        [switch]$AsAdmin
+    )
 
-        $TotalAccounts = @()
+    begin {
+        $Password = ConvertTo-SecureString "TEST" -AsPlainText -Force
+        $TotalAccounts = 1..$TestAccounts | ForEach-Object { $_.ToString("00") }
+    }
 
-        1..$TestAccounts | ForEach-Object { $TotalAccounts += $_.ToString("00") }
-    } #BEGIN
-
-    PROCESS {
+    process {
         foreach ($Account in $TotalAccounts) {
-            $Username = 'TEST' + $Account
-            New-LocalUser -Name $Username -Password $Password
+            $Username = "TEST$Account"
+
+            try {
+                New-LocalUser -Name $Username -Password $Password -AccountNeverExpires -ErrorAction Stop
+                Write-Host "Created user: $Username" -ForegroundColor Green
+
+                if ($AsAdmin) {
+                    Add-LocalGroupMember -Group "Administrators" -Member $Username -ErrorAction Stop
+                    Write-Host "→ Added $Username to Administrators group" -ForegroundColor Red
+                }
+            }
+            catch {
+                Write-Warning "Failed to create ${Username}: $($_.Exception.Message)"
+            }
         }
-    } #PROCESS
-
-    END { 
-
-    } #END
-
-} #FUNCTION
+    }
+}
